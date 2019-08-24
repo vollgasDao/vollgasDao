@@ -20,10 +20,5 @@ module.exports = {
       // Should be fixed in Truffle 5.0.17
       skipDryRun: true
     }
-  },
-  compilers: {
-    solc: {
-      version: '0.4.24'
-    }
   }
 }
