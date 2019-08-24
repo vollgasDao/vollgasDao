@@ -1,10 +1,10 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.4.21 <0.6.0;
 
 // Imports:
 import './base/ERC721/Future.sol';
-import './base/Ownable.sol';
+import "./base/ChainlinkClient.sol";
 
-contract GasFutures is Future, Ownable {
+contract GasFutures is ChainlinkClient, Future, Ownable {
 
     // Libraries inherited from Future:
     // using Counters for Counters.Counter;
@@ -21,7 +21,7 @@ contract GasFutures is Future, Ownable {
     // **************************** State Variables **********************************
     // ******* ETH Pools *******
     uint256 public reservePool;
-    BondingCurve bondingCurve;
+    BondingCurve public bondingCurve;
     // ******* ETH Pools END *******
 
     // ******* DAO policies *******
@@ -34,9 +34,16 @@ contract GasFutures is Future, Ownable {
     mapping(uint256 => GasFuture) public gasFutures;
     // ******* ERC721 token id =>  Gas Future Contract *******
 
-    // ******* redeemPrice (Chainlink -> EthGasStation) *******
-    uint256 redeemPricePerGas;
-    // ******* redeemPrice (Chainlink -> EthGasStation) END *******
+
+
+    // ******* CHAINLINK: redeemPricePerGas (Chainlink -> EthGasStation) *******
+    // Helper constant for testnets: 1 request = 1 LINK
+    uint256 constant private ORACLE_PAYMENT = 1 * LINK;
+    // Helper constant for the Chainlink uint256 multiplier JobID
+    bytes32 constant UINT256_MUL_JOB = bytes32("6d1bfe27e7034b1d87b5270556b17277");
+    // Callback variable to be set:
+    uint256 public redeemPricePerGas;
+    // ******* CHAINLINK redeemPricePerGas (Chainlink -> EthGasStation) END *******
     // **************************** State Variables END **********************************
 
     // **************************** GasFutures constructor() ******************************
@@ -46,6 +53,11 @@ contract GasFutures is Future, Ownable {
         // Initialise _feePerGas, dividendPoolPercentage
         feePerGas = 80000000000;  // 80 gwei
         dividendPoolPercentage = 5;  // 5%
+        // Chainlink
+        // Set the address for the LINK token for the network
+        setChainlinkToken(0x01BE23585060835E02B77ef475b0Cc51aA1e0709);
+        // Set the address of the oracle to create requests to
+        setChainlinkOracle(0x7AFe1118Ea78C1eae84ca8feE5C65Bc76CcF879e);
     }
     // **************************** GasFuturesconstructor() END *****************************
 
@@ -111,15 +123,75 @@ contract GasFutures is Future, Ownable {
     // **************************** mintGasFuture() END ******************************
 
 
-    // UPDATE via CHAINLINK
-    // **************************** setRedeemGasPrice() ******************************]
-    function setRedeemGasPrice()
-        onlyOwner
-        internal
-    {
-        redeemGasPrice =
+    // UPDATE via CHAINLINK RINKEBY
+    // **************************** CHAINLINK ******************************]
+    /**
+    * @notice Returns the address of the LINK token
+    * @dev This is the public implementation for chainlinkTokenAddress, which is
+    * an internal method of the ChainlinkClient contract
+    */
+    function getChainlinkToken() public view returns (address) {
+        return chainlinkTokenAddress();
     }
-    // **************************** setRedeemGasPrice() END ******************************
+
+    // Creates a Chainlink request with the uint256 multiplier job
+    function requestAverageGasPrice()
+        public
+        onlyOwner
+    {
+        // newRequest takes a JobID, a callback address, and callback function as input
+        Chainlink.Request memory req = buildChainlinkRequest(UINT256_MUL_JOB,
+                                                            this,
+                                                            this.setRedeemPricePerGas.selector
+        );
+        // Adds a URL with the key "get" to the request parameters
+        req.add("get", "https://ethgasstation.info/json/ethgasAPI.json");
+        // Uses input param (dot-delimited string) as the "path" in the request parameters
+        req.add("path", "average");
+        // Adds an integer with the key "times" to the request parameters
+        req.addInt("times", 1);
+        // Sends the request with 1 LINK to the oracle contract
+        sendChainlinkRequest(req, ORACLE_PAYMENT);
+    }
+
+    // fulfill receives a uint256 data type
+    function setRedeemPricePerGas(bytes32 _requestId, uint256 _averagePrice)
+        public
+        // Use recordChainlinkFulfillment to ensure only the requesting oracle can fulfill
+        recordChainlinkFulfillment(_requestId)
+    {
+        redeemPricePerGas = _averagePrice;
+    }
+
+    // withdrawLink allows the owner to withdraw any extra LINK on the contract
+    function withdrawLink()
+        public
+        onlyOwner
+    {
+        LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
+        require(link.transfer(msg.sender, link.balanceOf(address(this))), "Unable to transfer");
+    }
+
+    /**
+    * @notice Call this method if no response is received within 5 minutes
+    * @param _requestId The ID that was generated for the request to cancel
+    * @param _payment The payment specified for the request to cancel
+    * @param _callbackFunctionId The bytes4 callback function ID specified for
+    * the request to cancel
+    * @param _expiration The expiration generated for the request to cancel
+    */
+    function cancelRequest(
+        bytes32 _requestId,
+        uint256 _payment,
+        bytes4 _callbackFunctionId,
+        uint256 _expiration
+    )
+        public
+        onlyOwner
+    {
+        cancelChainlinkRequest(_requestId, _payment, _callbackFunctionId, _expiration);
+    }
+    // **************************** CHAINLINK END ******************************
 
 
     // DELETE
