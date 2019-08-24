@@ -1,0 +1,23 @@
+{
+  "name": "chainlink-box",
+  "version": "0.6.0",
+  "description": "A Chainlink example in a Truffle box",
+  "scripts": {
+    "compile": "npx truffle compile",
+    "console:dev": "npx truffle console --network cldev",
+    "console:live": "npx truffle console --network live",
+    "migrate:dev": "npx truffle migrate --reset --network cldev",
+    "migrate:live": "npx truffle migrate --network live",
+    "test": "npx truffle test"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "chainlink": "0.6.5",
+    "chainlink-test-helpers": "^0.6.0-5",
+    "openzeppelin-solidity": "^1.12.0"
+  },
+  "devDependencies": {
+    "truffle": "^5.0.25",
+    "truffle-hdwallet-provider": "^1.0.8"
+  }
+}
