@@ -1,0 +1,22 @@
+<main fxLayout="column" fxLayoutAlign="center center" fxLayoutGap="20px">
+    <h1>Be a part of the DAO and have the right to claim your dividend!</h1>
+    <article fxLayout="column" fxLayoutAlign="center center">
+        <p>How much do you want to invest?</p>
+        <mat-form-field appearnce="outline">
+                <input matInput type="number" placeholder="Amount in Ether" [formControl]="investControl" autocomplete="off" required>
+        </mat-form-field>
+        <button mat-raised-button class="buy-btn">Invest!</button>
+    </article>
+    <mat-divider></mat-divider>
+    <span class="banner" fxLayout="row" fxLayoutAlign="center center">
+        <h2>OR</h2>
+    </span>
+    <mat-divider></mat-divider>
+    <article fxLayout="column" fxLayoutAlign="center center" fxLayoutGap="20px"> 
+        <h2>Cash out your tokens!</h2>
+        <mat-form-field>
+            <input type="number" matInput placeholder="Amount to cash out" autocomplete="off" [formControl]="cashOutControl">
+        </mat-form-field>
+        <button mat-raised-button class="cash-out-btn">Cash out!</button>
+    </article>
+</main>

@@ -1,0 +1,19 @@
+main {
+    width: 100%;
+    margin-top: 20px;
+}
+.invest {
+    background-color: rgb(66, 209, 66);
+}
+
+.claim {
+    background-color: rgb(107, 188, 255);
+}
+
+.vote {
+    background-color: beige;
+}
+mat-card {
+    cursor: pointer;
+    outline-width: 0px;
+}
