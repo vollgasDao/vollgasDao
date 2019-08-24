@@ -4,7 +4,7 @@ pragma solidity ^0.5.0;
 import './base/ERC721/Future.sol';
 import './base/Ownable.sol';
 
-contract gasFutures is Future, Ownable {
+contract GasFutures is Future, Ownable {
 
     // Libraries inherited from Future:
     // using Counters for Counters.Counter;
@@ -67,7 +67,7 @@ contract gasFutures is Future, Ownable {
         require(_gasAmount != 0, "gasFutures.mintGasFuture: _gasAmount cannot be 0");
 
         // Step2: Require that interface transfers the correct execution prepayment
-        require(msg.value == calcGasFuturePrice(),  // calc for msg.sender==dappInterface
+        require(msg.value == calcGasFuturePrice(_gasAmount),  // calc for msg.sender==dappInterface
             "gasFutures.mintGasFuture: msg.value != calcGasFuturePrice() for msg.sender/dappInterface"
         );
 
@@ -124,36 +124,5 @@ contract gasFutures is Future, Ownable {
     }
     // **************************** redeemGasFuture() END ******************************
 
-
-
-    /*
-     * Liquidity Provider Functions
-     */
-
-    // deposit ETH
-
-    // withdraw ETH
-
-    // vote on premium rate
-
-    // vote on gas rate
-
-
-
-
-    /*
-     * Gas Contract Functions
-     */
-
-    // Buy contract
-
-
-    // Settle contract
-
-
-    // Settle contract wrapped
-
-
-    // Transfer contract // ERC721
 
 }
