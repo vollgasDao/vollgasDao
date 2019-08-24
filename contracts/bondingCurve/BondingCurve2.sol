@@ -9,7 +9,7 @@ import "./ICurveLogic.sol";
 /// @title A bonding curve implementation for buying a selling bonding curve tokens.
 /// @author dOrg
 /// @notice Uses a defined ERC20 token as reserve currency
-contract BondingCurve is Initializable, OpenZeppelinUpgradesOwnable, DividendPayingToken {
+contract BondingCurve2 is Initializable, OpenZeppelinUpgradesOwnable, DividendPayingToken {
     using SafeMath for uint256;
 
     // IERC20 internal _collateralToken;

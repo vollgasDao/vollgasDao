@@ -9,7 +9,7 @@ import "./ICurveLogic.sol";
 /// @title A bonding curve implementation for buying a selling bonding curve tokens.
 /// @author dOrg
 /// @notice Uses a defined ERC20 token as reserve currency
-contract BondingCurve2 is Initializable, OpenZeppelinUpgradesOwnable, DividendPayingToken {
+contract BondingCurve is Initializable, OpenZeppelinUpgradesOwnable, DividendPayingToken {
     using SafeMath for uint256;
 
     // IERC20 internal _collateralToken;
@@ -169,24 +169,13 @@ contract BondingCurve2 is Initializable, OpenZeppelinUpgradesOwnable, DividendPa
     ///     but keeping track of such data on-chain costs much more than
     ///     the saved ether, so we don't do that.
 
-    function payCurve()
+    function pay()
         public
         payable
     {
         distributeDividends();
-        /*uint256 amount = msg.value;
-        require(amount > MICRO_PAYMENT_THRESHOLD, NO_MICRO_PAYMENTS);
-        require(totalSupply() > 0);
+        emit Pay(msg.sender, msg.value);
 
-        if (amount > 0) {
-          magnifiedDividendPerShare = magnifiedDividendPerShare.add(
-            (amount).mul(magnitude) / totalSupply()
-          );
-          emit DividendsDistributed(msg.sender, amount);
-        }
-
-        emit Pay(msg.sender, amount);
-        */
     }
 
     /*
@@ -203,15 +192,6 @@ contract BondingCurve2 is Initializable, OpenZeppelinUpgradesOwnable, DividendPa
     /*
         Getter Functions
     */
-
-    /// @notice Get reserve token contract
-    /*
-    function collateralToken() public view returns (IERC20) {
-        return _collateralToken;
-    }
-    */
-
-
 
     /// @notice Get buy curve contract
     function buyCurve() public view returns (ICurveLogic) {
@@ -244,12 +224,13 @@ contract BondingCurve2 is Initializable, OpenZeppelinUpgradesOwnable, DividendPa
     //}
 
     /// @notice Get minimum value accepted for payments
-    function getPaymentThreshold() public view returns (uint256) {
+    function getPaymentThreshold() public pure returns (uint256)
+    {
         return MICRO_PAYMENT_THRESHOLD;
     }
 
     function() external payable
     {
-        payCurve();
+        pay();
     }
 }
