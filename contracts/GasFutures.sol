@@ -1,12 +1,10 @@
 pragma solidity ^0.5.0;
 
 // Imports:
-import "chainlink/contracts/Chainlinked.sol";
 import './base/ERC721/Future.sol';
 import './base/Ownable.sol';
-import './base/SafeMath.sol';
 
-contract GasFutures is ChainlinkClient, Future, Ownable {
+contract gasFutures is Future, Ownable {
 
     // Libraries inherited from Future:
     // using Counters for Counters.Counter;
@@ -14,95 +12,118 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
     // Counter for execution Claims
     Counters.Counter private _gasFutureIds;
 
-    // New Core struct
+    // Gas Future Object
     struct GasFuture {
-        address dappInterface;
-        bytes functionSignature;
+        uint256 gasAmount;
+        uint256 expirationDate;
     }
 
-    /*
-     * State Variables
-     */
+    // **************************** State Variables **********************************
+    // ******* ETH Pools *******
+    uint256 public reservePool;
+    uint256 public dividendPool;
+    // ******* ETH Pools END *******
 
-    /// ETH Reserve
-    uint256 dividendPool;
-    /// DAO shares
+    // ******* DAO policies *******
+    uint256 public feePerGas;
+    uint256 public dividendPoolRatio;
+    uint256 public constant expirationDate = 28 days;
+    // ******* DAO policies END *******
 
-    uint256 premium;
-    uint256 dailyMultiplier;
-    uint256 duration;
-    // changeable through DAO
+    // ******* ERC721 token id =>  Gas Future Contract *******
+    mapping(uint256 => GasFuture) public gasFutures;
+    // ******* ERC721 token id =>  Gas Future Contract *******
 
-    uint256 currentGasPrice;
-    // through chainlink oracle
-
-    mapping(uint256 => address) public outstandingGasFuturesOwner;
-    mapping(uint256 => bytes32) public outstandingGasFuturesData;    // expiryDate, gasAmount, gasPriceFT
-    uint256 nonce;
-
+    // ******* redeemPrice (Chainlink -> EthGasStation) *******
+    uint256 redeemPricePerGas;
+    // ******* redeemPrice (Chainlink -> EthGasStation) END *******
+    // **************************** State Variables END **********************************
 
 
-    /*
-     * GasFutures Functions
-     */
-
-    function buyGasFuture(
-        uint256 gasAmount
-    )
-        public payable
-        returns (uint256, uint256)
-    {
-        require(msg.value == gasAmount * currentGasPrice, "msg.value does not cover future cost");
-        // consider premium -> use gasPriceFT instead of currentGasPrice?
-
-        uint256 gasPriceFT = currentGasPrice * premium;
-        // consider extracting the premium to dividend pool
-        // change computation logic, just extract a flat fee instead of percentage
-
-        uint256 expiryDate = block.number + duration;
-        bytes32 gasFutureHash = keccak256(abi.encodePacked(expiryDate, gasAmount, gasPriceFT));
-        nonce++;
-        outstandingGasFuturesOwner[nonce] = msg.sender;
-        outstandingGasFuturesData[nonce] = gasFutureHash;
-        return (nonce, gasPriceFT);
-
-        // consider not selling more futures than the reserve can handle?
+    // Fallback function needed for arbitrary funding additions to Gelato Core's balance by owner
+    function() external payable {
+        require(isOwner(),
+            "fallback function: only the owner should send ether to gasFutures without selecting a payable function."
+        );
     }
 
-    function redeemGasFuture(
-        uint256 gasFutureId,
-        uint256 expiryDate,
-        uint256 gasAmount,
-        uint256 gasPriceFT
-    )
+    // Function to calculate the price of the user's GasFuture contract
+    function calcGasFuturePrice(uint256 _gasAmount)
         public
-        returns (uint256)
+        view
+        returns(uint256 gasFuturePrice)
     {
-        require(block.number <= expiryDate, "GasFuture contract expired");
-
-        bytes32 gasFutureHash = keccak256(abi.encodePacked(expiryDate, gasAmount, gasPriceFT));
-        require(gasFutureHash == outstandingGasFuturesData[gasFutureId], "GasFuture data not valid");
-        // can this be submitted by anyone??
-        // this should be doable by the owner of the gasContract & delegated owners
-
-        uint256 payout;
-        if (currentGasPrice == gasPriceFT) {
-            payout = gasAmount;
-        } else if (currentGasPrice > gasPriceFT) {
-            uint256 gasPriceDelta = currentGasPrice - gasPriceFT;
-            payout = gasAmount + (gasAmount * gasPriceDelta);
-        } else {
-            uint256 gasPriceDelta = gasPriceFT - currentGasPrice;
-            payout = gasAmount - (gasAmount * gasPriceDelta);
-        }
-
-        outstandingGasFuturesOwner[gasFutureId] = address(0);
-        outstandingGasFuturesData[gasFutureId] = bytes32(0);
-        // deletes GasFuture, returns gas from deleting storage, prevents re-entrancy
-
-        msg.sender.transfer(payout);
-        return(payout);     // necessary?
+        // msg.sender == gasFuture buyer
+        gasFuturePrice = _gasAmount.mul(feePerGas);
     }
+
+    // CREATE
+    // **************************** mintGasFuture() ******************************
+    function mintGasFuture(uint256 _gasAmount)
+        payable
+        public
+    {
+        // Step1.1: Zero value preventions
+        require(_gasAmount != 0, "gasFutures.mintGasFuture: _gasAmount cannot be 0");
+
+        // Step2: Require that interface transfers the correct execution prepayment
+        require(msg.value == calcGasFuturePrice(),  // calc for msg.sender==dappInterface
+            "gasFutures.mintGasFuture: msg.value != calcGasFuturePrice() for msg.sender/dappInterface"
+        );
+
+        // Step3: Instantiate GasFuture (in memory)
+        GasFuture memory gasFuture = GasFuture(
+            _gasAmount,
+            expirationDate
+        );
+
+        // ****** Step4: Mint new GasFuture ERC721 token ******
+        // Increment the current token id
+        Counters.increment(_gasFutureIds);
+        // Get a new, unique token id for the newly minted ERC721
+        uint256 gasFutureId = _gasFutureIds.current();
+        // Mint new ERC721 Token representing one childOrder
+        _mint(msg.sender, gasFutureId);
+        // ****** Step4: Mint new GasFuture ERC721 token END ******
+
+
+        // Step5: gasFutures tracking state variable update
+        // ERC721(gasFutureId) => GasFuture(struct)
+        gasFutures[gasFutureId] = gasFuture;
+    }
+    // **************************** mintGasFuture() END ******************************
+
+
+    // onlyGasFutureOwner
+    modifier onlyGasFutureOwner(uint256 _gasFutureId) {
+        require(msg.sender == ownerOf(_gasFutureId),
+            "modifier onlyGasFutureOwner: msg.sender != ownerOf(gasFutureId)"
+        );
+        _;
+    }
+
+    // **************************** redeemGasFuture() ******************************
+    function redeemGasFuture(uint256 _gasFutureId)
+        onlyGasFutureOwner(_gasFutureId)
+        external
+    {
+        GasFuture memory gasFuture = gasFutures[_gasFutureId];
+
+        // Local variables needed for Checks, Effects -> Interactions pattern
+        address payable gasFutureOwner = address(uint160(ownerOf(_gasFutureId)));
+        uint256 payout = gasFuture.gasAmount.mul(redeemPricePerGas);
+
+        // CHECKS: onlyGasFutureOwner modifier
+
+        // EFFECTS: emit event, then burn and delete the GasFuture struct - possible gas payout to msg.sender?
+        _burn(_gasFutureId);
+        delete gasFutures[_gasFutureId];
+
+        // INTERACTIONS: payout the prepaidFee to the GasFuture owner
+        gasFutureOwner.transfer(payout);
+    }
+    // **************************** redeemGasFuture() END ******************************
+
 
 
     /*
