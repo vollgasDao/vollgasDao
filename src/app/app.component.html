@@ -1,0 +1,21 @@
+<button mat-icon-button [matMenuTriggerFor]="menu" class="nav-button">
+  <mat-icon class="nav-icon">toc</mat-icon>
+</button>
+<mat-menu #menu="matMenu">
+  <button mat-menu-item routerLink="/">
+    <mat-icon>home</mat-icon>
+    <span>Home</span>
+  </button>
+  <button mat-menu-item routerLink="/buy-token">
+    <mat-icon>account_balance_wallet</mat-icon>
+    <span>Buy Token</span>
+  </button>
+  <button mat-menu-item [routerLink]="['/dao']">
+    <mat-icon>group</mat-icon>
+    <span>DAO</span>
+  </button>
+</mat-menu>
+<router-outlet></router-outlet>
+<section class="footer">
+  <img src="../../../../assets/backgrounds/ethereum.png">
+</section>

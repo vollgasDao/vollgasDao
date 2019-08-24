@@ -1,0 +1,31 @@
+<main fxLayout="column" fxLayoutAlign="center center" fxLayoutGap="20px">
+    <p><i>The current gas price is {{avgPriceToString}} gwei.</i></p>
+    <article fxLayout="column" fxLayoutAlign="center center">
+        <h3>Save Ether and use this token in 28 days.</h3>
+        <p>You can redeem the token to get the current gas price for your decantralized actions.</p>
+    </article>
+    <article fxLayout="column" fxLayoutAlign="center center" fxLayoutGap="30px">
+        <h4>Buy Token</h4>
+        <mat-form-field>
+            <input matInput type="number" [formControl]="buyTokenControl" autocomplete="off" min="1"
+                placeholder="How much tokens?" required>
+        </mat-form-field>
+        <span>Price to pay in gwei: <ng-container *ngIf="priceToPay">{{priceToPay}}</ng-container>
+        </span>
+        <button mat-raised-button class="buy-btn" (click)="buyToken()">Buy tokens!</button>
+    </article>
+    <mat-divider></mat-divider>
+    <span class="banner" fxLayout="row" fxLayoutAlign="center center">
+        <h2>OR</h2>
+    </span>
+    <mat-divider></mat-divider>
+    <article fxLayout="column" fxLayoutAlign="center center" fxLayoutGap="30px">
+        <h3>If you have some gas tokens, you can redeem it to receive ether/gwei</h3>
+        <p>For one token you will get {{paypackEther}}</p>
+        <mat-form-field>
+            <input matInput type="number" [formControl]="redeemTokenControl" autocomplete="off" min="1"
+                placeholder="Amount for redeement?" required>
+        </mat-form-field>
+        <button mat-raised-button class="redeem-btn" (click)="redeemToken()">Redeem tokens!</button>
+    </article>
+</main>
