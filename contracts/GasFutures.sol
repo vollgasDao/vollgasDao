@@ -27,7 +27,7 @@ contract GasFutures is Future, Ownable {
     // ******* DAO policies *******
     uint256 public feePerGas;
     uint256 public dividendPoolRatio;
-    uint256 public constant expirationDate = 28 days;
+    uint256 public constant futureContractDuration = 28 days;
     // ******* DAO policies END *******
 
     // ******* ERC721 token id =>  Gas Future Contract *******
@@ -38,6 +38,16 @@ contract GasFutures is Future, Ownable {
     uint256 redeemPricePerGas;
     // ******* redeemPrice (Chainlink -> EthGasStation) END *******
     // **************************** State Variables END **********************************
+
+    // **************************** GasFutures constructor() ******************************
+    constructor()
+        public
+    {
+        // Initialise _feePerGas, dividendPoolRatio
+        feePerGas = 80000000000;  // 80 gwei
+        dividendPoolRatio = 3;  // 3%
+    }
+    // **************************** GasFuturesconstructor() END *****************************
 
 
     // Fallback function needed for arbitrary funding additions to Gelato Core's balance by owner
@@ -63,31 +73,41 @@ contract GasFutures is Future, Ownable {
         payable
         public
     {
-        // Step1.1: Zero value preventions
+        // Step0: Zero value preventions
         require(_gasAmount != 0, "gasFutures.mintGasFuture: _gasAmount cannot be 0");
 
-        // Step2: Require that interface transfers the correct execution prepayment
-        require(msg.value == calcGasFuturePrice(_gasAmount),  // calc for msg.sender==dappInterface
+        // Step1: get the gasFuturePrice
+        uint256 gasFuturePrice = _gasAmount.mul(feePerGas);
+
+        // Step2: Require that user transfers full gasFuturePrice ether
+        require(msg.value == gasFuturePrice,  // calc for msg.sender==dappInterface
             "gasFutures.mintGasFuture: msg.value != calcGasFuturePrice() for msg.sender/dappInterface"
         );
 
-        // Step3: Instantiate GasFuture (in memory)
+        // Step3: Distribute GasFuturePrice into reserve and dividend pools
+        uint256 dividendPoolShare = gasFuturePrice.mul(100 + dividendPoolRatio).div(100);
+        uint256 reservePoolShare = gasFuturePrice.sub(dividendPoolShare);
+        dividendPool.add(dividendPoolShare);
+        reservePool.add(reservePoolShare);
+
+
+        // Step4: Instantiate GasFuture (in memory)
         GasFuture memory gasFuture = GasFuture(
             _gasAmount,
-            expirationDate
+            now + futureContractDuration
         );
 
-        // ****** Step4: Mint new GasFuture ERC721 token ******
+        // ****** Step5: Mint new GasFuture ERC721 token ******
         // Increment the current token id
         Counters.increment(_gasFutureIds);
         // Get a new, unique token id for the newly minted ERC721
         uint256 gasFutureId = _gasFutureIds.current();
         // Mint new ERC721 Token representing one childOrder
         _mint(msg.sender, gasFutureId);
-        // ****** Step4: Mint new GasFuture ERC721 token END ******
+        // ****** Step5: Mint new GasFuture ERC721 token END ******
 
 
-        // Step5: gasFutures tracking state variable update
+        // Step6: gasFutures tracking state variable update
         // ERC721(gasFutureId) => GasFuture(struct)
         gasFutures[gasFutureId] = gasFuture;
     }
@@ -114,6 +134,9 @@ contract GasFutures is Future, Ownable {
         uint256 payout = gasFuture.gasAmount.mul(redeemPricePerGas);
 
         // CHECKS: onlyGasFutureOwner modifier
+        require(gasFuture.expirationDate > now,
+            "GasFutures.redeemGasFuture: gasFuture.expirationDate not > now"
+        );
 
         // EFFECTS: emit event, then burn and delete the GasFuture struct - possible gas payout to msg.sender?
         _burn(_gasFutureId);
