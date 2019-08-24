@@ -21,12 +21,12 @@ contract GasFutures is Future, Ownable {
     // **************************** State Variables **********************************
     // ******* ETH Pools *******
     uint256 public reservePool;
-    uint256 public dividendPool;
+    BondingCurve bondingCurve;
     // ******* ETH Pools END *******
 
     // ******* DAO policies *******
     uint256 public feePerGas;
-    uint256 public dividendPoolRatio;
+    uint256 public dividendPoolPercentage;
     uint256 public constant futureContractDuration = 28 days;
     // ******* DAO policies END *******
 
@@ -43,18 +43,16 @@ contract GasFutures is Future, Ownable {
     constructor()
         public
     {
-        // Initialise _feePerGas, dividendPoolRatio
+        // Initialise _feePerGas, dividendPoolPercentage
         feePerGas = 80000000000;  // 80 gwei
-        dividendPoolRatio = 3;  // 3%
+        dividendPoolPercentage = 5;  // 5%
     }
     // **************************** GasFuturesconstructor() END *****************************
 
 
-    // Fallback function needed for arbitrary funding additions to Gelato Core's balance by owner
+    // Fallback function tops up reserve pool
     function() external payable {
-        require(isOwner(),
-            "fallback function: only the owner should send ether to gasFutures without selecting a payable function."
-        );
+        reservePool.add(msg.value);
     }
 
     // Function to calculate the price of the user's GasFuture contract
@@ -85,9 +83,9 @@ contract GasFutures is Future, Ownable {
         );
 
         // Step3: Distribute GasFuturePrice into reserve and dividend pools
-        uint256 dividendPoolShare = gasFuturePrice.mul(100 + dividendPoolRatio).div(100);
+        uint256 dividendPoolShare = gasFuturePrice.mul(100 + dividendPoolPercentage).div(100);
         uint256 reservePoolShare = gasFuturePrice.sub(dividendPoolShare);
-        dividendPool.add(dividendPoolShare);
+        bondingCurve.payCurve().value(dividendPoolShare);
         reservePool.add(reservePoolShare);
 
 
@@ -106,7 +104,6 @@ contract GasFutures is Future, Ownable {
         _mint(msg.sender, gasFutureId);
         // ****** Step5: Mint new GasFuture ERC721 token END ******
 
-
         // Step6: gasFutures tracking state variable update
         // ERC721(gasFutureId) => GasFuture(struct)
         gasFutures[gasFutureId] = gasFuture;
@@ -114,6 +111,18 @@ contract GasFutures is Future, Ownable {
     // **************************** mintGasFuture() END ******************************
 
 
+    // UPDATE via CHAINLINK
+    // **************************** setRedeemGasPrice() ******************************]
+    function setRedeemGasPrice()
+        onlyOwner
+        internal
+    {
+        redeemGasPrice =
+    }
+    // **************************** setRedeemGasPrice() END ******************************
+
+
+    // DELETE
     // onlyGasFutureOwner
     modifier onlyGasFutureOwner(uint256 _gasFutureId) {
         require(msg.sender == ownerOf(_gasFutureId),
@@ -121,7 +130,6 @@ contract GasFutures is Future, Ownable {
         );
         _;
     }
-
     // **************************** redeemGasFuture() ******************************
     function redeemGasFuture(uint256 _gasFutureId)
         onlyGasFutureOwner(_gasFutureId)
@@ -135,7 +143,10 @@ contract GasFutures is Future, Ownable {
 
         // CHECKS: onlyGasFutureOwner modifier
         require(gasFuture.expirationDate > now,
-            "GasFutures.redeemGasFuture: gasFuture.expirationDate not > now"
+            "GasFutures.redeemGasFuture: gasFuture.expirationDate passed"
+        );
+        require(reservePool >= payout,
+            "GasFutures.redeemGasFuture: insufficient funds in reservePool"
         );
 
         // EFFECTS: emit event, then burn and delete the GasFuture struct - possible gas payout to msg.sender?
