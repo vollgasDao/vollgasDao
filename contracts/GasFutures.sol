@@ -37,17 +37,25 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
     mapping(uint256 => GasFuture) public gasFutures;
     // ******* ERC721 token id =>  Gas Future Contract *******
 
-
-
     // ******* CHAINLINK: redeemPricePerGas (Chainlink -> EthGasStation) *******
     // Helper constant for testnets: 1 request = 1 LINK
     uint256 constant private ORACLE_PAYMENT = 1 * LINK;
     // Helper constant for the Chainlink uint256 multiplier JobID
     bytes32 constant UINT256_MUL_JOB = bytes32("6d1bfe27e7034b1d87b5270556b17277");
+    // Timeout for calls to oracle
+    uint256 public chainlinkRequestTimeout = now;
     // Callback variable to be set:
     uint256 public redeemPricePerGas;
     // ******* CHAINLINK redeemPricePerGas (Chainlink -> EthGasStation) END *******
     // **************************** State Variables END **********************************
+
+    // modifier
+    modifier chainlinkAvailable() {
+        require(chainlinkRequestTimeout <= now,
+            "chainlinkAvailabe: time out"
+        );
+        _;
+    }
 
     // **************************** GasFutures constructor() ******************************
     constructor(address _bondingCurve)
@@ -93,37 +101,43 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         // Step0: Zero value preventions
         require(_gasAmount != 0, "gasFutures.mintGasFuture: _gasAmount cannot be 0");
 
-        // Step1: get the gasFuturePrice
+        // Step1: chainlinkRequestTimeout check and setting
+        if (chainlinkRequestTimeout < now) {
+            chainlinkRequestTimeout.add(5 minutes);
+            requestAverageGasPrice();
+        }
+
+        // Step2: get the gasFuturePrice
         uint256 gasFuturePrice = _gasAmount.mul(feePerGas);
 
-        // Step2: Require that user transfers full gasFuturePrice ether
+        // Step3: Require that user transfers full gasFuturePrice ether
         require(msg.value == gasFuturePrice,  // calc for msg.sender==dappInterface
             "gasFutures.mintGasFuture: msg.value != calcGasFuturePrice() for msg.sender/dappInterface"
         );
 
-        // Step3: Distribute GasFuturePrice into reserve and dividend pools
+        // Step4: Distribute GasFuturePrice into reserve and dividend pools
         uint256 dividendPoolShare = gasFuturePrice.mul(100 + dividendPoolPercentage).div(100);
         uint256 reservePoolShare = gasFuturePrice.sub(dividendPoolShare);
         IBondingCurve(bondingCurveAddr).pay.value(dividendPoolShare)();
         reservePool.add(reservePoolShare);
 
 
-        // Step4: Instantiate GasFuture (in memory)
+        // Step5: Instantiate GasFuture (in memory)
         GasFuture memory gasFuture = GasFuture(
             _gasAmount,
             now + futureContractDuration
         );
 
-        // ****** Step5: Mint new GasFuture ERC721 token ******
+        // ****** Step6: Mint new GasFuture ERC721 token ******
         // Increment the current token id
         Counters.increment(_gasFutureIds);
         // Get a new, unique token id for the newly minted ERC721
         uint256 gasFutureId = _gasFutureIds.current();
         // Mint new ERC721 Token representing one childOrder
         _mint(msg.sender, gasFutureId);
-        // ****** Step5: Mint new GasFuture ERC721 token END ******
+        // ****** Step6: Mint new GasFuture ERC721 token END ******
 
-        // Step6: gasFutures tracking state variable update
+        // Step7: gasFutures tracking state variable update
         // ERC721(gasFutureId) => GasFuture(struct)
         gasFutures[gasFutureId] = gasFuture;
     }
@@ -143,9 +157,12 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
 
     // Creates a Chainlink request with the uint256 multiplier job
     function requestAverageGasPrice()
+        chainlinkAvailable
         public
-        onlyOwner
     {
+        // Increment the request timeout
+        chainlinkRequestTimeout.add(5 minutes);
+
         // newRequest takes a JobID, a callback address, and callback function as input
         Chainlink.Request memory req = buildChainlinkRequest(UINT256_MUL_JOB,
                                                             this,
@@ -167,6 +184,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         // Use recordChainlinkFulfillment to ensure only the requesting oracle can fulfill
         recordChainlinkFulfillment(_requestId)
     {
+        _averagePrice = _averagePrice.mul(10**8);  // convert from 10x gwei to wei
         redeemPricePerGas = _averagePrice;
     }
 

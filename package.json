@@ -11,7 +11,7 @@
     "console:dev": "npx truffle console --network cldev",
     "console:live": "npx truffle console --network live",
     "migrate:dev": "npx truffle migrate --reset --network cldev",
-    "migrate:live": "npx truffle migrate --network live"
+    "migrate:live": "npx truffle migrate --reset --network live"
   },
   "repository": {
     "type": "git",
