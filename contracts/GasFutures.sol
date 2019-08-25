@@ -103,7 +103,6 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
 
         // Step1: chainlinkRequestTimeout check and setting
         if (chainlinkRequestTimeout < now) {
-            chainlinkRequestTimeout.add(5 minutes);
             requestAverageGasPrice();
         }
 
