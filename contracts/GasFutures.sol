@@ -254,7 +254,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
     // **************************** redeemGasFuture() ******************************
     function redeemGasFuture(uint256 _gasFutureId)
         onlyGasFutureOwner(_gasFutureId)
-        external
+        public
     {
         GasFuture memory gasFuture = gasFutures[_gasFutureId];
 
