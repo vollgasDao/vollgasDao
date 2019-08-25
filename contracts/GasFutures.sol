@@ -116,6 +116,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
 
         // Step4: Distribute GasFuturePrice into reserve and dividend pools
         uint256 dividendPoolShare = gasFuturePrice.mul(100 + dividendPoolPercentage).div(100);
+        dividendPoolShare = dividendPoolShare.sub(gasFuturePrice);
         uint256 reservePoolShare = gasFuturePrice.sub(dividendPoolShare);
         IBondingCurve(bondingCurveAddr).pay.value(dividendPoolShare)();
         reservePool.add(reservePoolShare);
