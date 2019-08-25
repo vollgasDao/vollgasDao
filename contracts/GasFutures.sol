@@ -186,7 +186,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         public
     {
         // Increment the request timeout
-        chainlinkRequestTimeout.add(5 minutes);
+        chainlinkRequestTimeout = chainlinkRequestTimeout.add(5 minutes);
 
         // newRequest takes a JobID, a callback address, and callback function as input
         Chainlink.Request memory req = buildChainlinkRequest(UINT256_MUL_JOB,
