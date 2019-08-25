@@ -1,6 +1,6 @@
-pragma solidity ^0.5.0;
+pragma solidity 0.4.24;
 
-import "../../base/SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IERC721.sol";
 import "./IERC721Receiver.sol";
 import "./Address.sol";

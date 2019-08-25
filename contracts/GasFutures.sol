@@ -1,8 +1,11 @@
-pragma solidity >=0.4.21 <0.6.0;
+pragma solidity 0.4.24;
 
 // Imports:
-import './base/ERC721/Future.sol';
-import "./base/ChainlinkClient.sol";
+import "chainlink/contracts/Chainlinked.sol";
+import "./base/ERC721/Future.sol";
+import "./base/IBondingCurve.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+
 
 contract GasFutures is ChainlinkClient, Future, Ownable {
 
@@ -21,7 +24,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
     // **************************** State Variables **********************************
     // ******* ETH Pools *******
     uint256 public reservePool;
-    BondingCurve public bondingCurve;
+    address public bondingCurveAddr;
     // ******* ETH Pools END *******
 
     // ******* DAO policies *******
@@ -47,12 +50,16 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
     // **************************** State Variables END **********************************
 
     // **************************** GasFutures constructor() ******************************
-    constructor()
+    constructor(address _bondingCurve)
         public
     {
         // Initialise _feePerGas, dividendPoolPercentage
         feePerGas = 80000000000;  // 80 gwei
         dividendPoolPercentage = 5;  // 5%
+
+        // Bonding Curve
+        bondingCurveAddr = _bondingCurve;
+
         // Chainlink
         // Set the address for the LINK token for the network
         setChainlinkToken(0x01BE23585060835E02B77ef475b0Cc51aA1e0709);
@@ -97,7 +104,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         // Step3: Distribute GasFuturePrice into reserve and dividend pools
         uint256 dividendPoolShare = gasFuturePrice.mul(100 + dividendPoolPercentage).div(100);
         uint256 reservePoolShare = gasFuturePrice.sub(dividendPoolShare);
-        bondingCurve.payCurve().value(dividendPoolShare);
+        IBondingCurve(bondingCurveAddr).pay.value(dividendPoolShare)();
         reservePool.add(reservePoolShare);
 
 
@@ -210,7 +217,6 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         GasFuture memory gasFuture = gasFutures[_gasFutureId];
 
         // Local variables needed for Checks, Effects -> Interactions pattern
-        address payable gasFutureOwner = address(uint160(ownerOf(_gasFutureId)));
         uint256 payout = gasFuture.gasAmount.mul(redeemPricePerGas);
 
         // CHECKS: onlyGasFutureOwner modifier
@@ -226,7 +232,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         delete gasFutures[_gasFutureId];
 
         // INTERACTIONS: payout the prepaidFee to the GasFuture owner
-        gasFutureOwner.transfer(payout);
+        ownerOf(_gasFutureId).transfer(payout);
     }
     // **************************** redeemGasFuture() END ******************************
 

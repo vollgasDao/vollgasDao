@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/vollgasDao/vollgasDao#readme",
   "dependencies": {
+    "chainlink": "^0.6.6-beta2",
     "truffle-hdwallet-provider": "^1.0.17"
   }
 }
