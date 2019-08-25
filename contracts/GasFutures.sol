@@ -82,7 +82,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
 
     // Fallback function tops up reserve pool
     function() external payable {
-        reservePool.add(msg.value);
+        reservePool = reservePool.add(msg.value);
     }
 
     // Function to calculate the price of the user's GasFuture contract
@@ -122,7 +122,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         dividendPoolShare = dividendPoolShare.sub(gasFuturePrice);
         uint256 reservePoolShare = gasFuturePrice.sub(dividendPoolShare);
         IBondingCurve(bondingCurveAddr).pay.value(dividendPoolShare)();
-        reservePool.add(reservePoolShare);
+        reservePool = reservePool.add(reservePoolShare);
 
 
         // Step5: Instantiate GasFuture (in memory)
