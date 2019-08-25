@@ -71,6 +71,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
 
         // Chainlink
         chainlinkActivated = false;
+        redeemPricePerGas = 5000000000; 
         // Set the address for the LINK token for the network
         setChainlinkToken(0x01BE23585060835E02B77ef475b0Cc51aA1e0709);
         // Set the address of the oracle to create requests to
