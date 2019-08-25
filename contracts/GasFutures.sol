@@ -41,7 +41,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
     // Helper constant for testnets: 1 request = 1 LINK
     uint256 constant private ORACLE_PAYMENT = 1 * LINK;
     // Helper constant for the Chainlink uint256 multiplier JobID
-    bytes32 constant UINT256_MUL_JOB = bytes32("6d1bfe27e7034b1d87b5270556b17277");
+    bytes32 constant UINT256_MUL_JOB = bytes32("9f0406209cf64acda32636018b33de11");
     // Timeout for calls to oracle
     bool public chainlinkActivated;
     uint256 public chainlinkRequestTimeout = now;
@@ -70,11 +70,11 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         bondingCurveAddr = _bondingCurve;
 
         // Chainlink
-        chainlinkActivated = false;
+        chainlinkActivated = true;
         // Set the address for the LINK token for the network
-        setChainlinkToken(0x01BE23585060835E02B77ef475b0Cc51aA1e0709);
+        setPublicChainlinkToken();
         // Set the address of the oracle to create requests to
-        setChainlinkOracle(0x7AFe1118Ea78C1eae84ca8feE5C65Bc76CcF879e);
+        setChainlinkOracle(0xc99B3D447826532722E41bc36e644ba3479E4365);
     }
     // **************************** GasFuturesconstructor() END *****************************
 
