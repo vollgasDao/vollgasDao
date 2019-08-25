@@ -8,7 +8,7 @@ let LinkToken = artifacts.require('LinkToken')
   can be retrieved by calling the withdrawLink() function.
 */
 
-const payment = '3000000000000000000'
+const payment = '10000000000000000000'
 
 module.exports = async (callback) => {
   let gasFutures = await GasFutures.deployed()

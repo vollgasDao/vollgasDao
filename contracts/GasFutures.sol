@@ -43,6 +43,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
     // Helper constant for the Chainlink uint256 multiplier JobID
     bytes32 constant UINT256_MUL_JOB = bytes32("6d1bfe27e7034b1d87b5270556b17277");
     // Timeout for calls to oracle
+    bool public chainlinkActivated;
     uint256 public chainlinkRequestTimeout = now;
     // Callback variable to be set:
     uint256 public redeemPricePerGas;
@@ -69,6 +70,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         bondingCurveAddr = _bondingCurve;
 
         // Chainlink
+        chainlinkActivated = false;
         // Set the address for the LINK token for the network
         setChainlinkToken(0x01BE23585060835E02B77ef475b0Cc51aA1e0709);
         // Set the address of the oracle to create requests to
@@ -102,7 +104,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         require(_gasAmount != 0, "gasFutures.mintGasFuture: _gasAmount cannot be 0");
 
         // Step1: chainlinkRequestTimeout check and setting
-        if (chainlinkRequestTimeout < now) {
+        if (chainlinkRequestTimeout < now && chainlinkActivated) {
             requestAverageGasPrice();
         }
 
@@ -144,7 +146,29 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
     // **************************** mintGasFuture() END ******************************
 
 
-    // UPDATE via CHAINLINK RINKEBY
+    // UPDATE
+    function activateChainlink(bool _active)
+        public
+    {
+        chainlinkActivated = _active;
+    }
+
+    function updateFeePerGas(uint256 _feePerGas)
+        public
+        onlyOwner
+    {
+        feePerGas = _feePerGas;
+    }
+
+    function updateDividendPoolPercentage(uint256 _dividendPercantage)
+        public
+        onlyOwner
+    {
+        dividendPoolPercentage = _dividendPercantage;
+    }
+
+
+    // via CHAINLINK RINKEBY
     // **************************** CHAINLINK ******************************]
     /**
     * @notice Returns the address of the LINK token
