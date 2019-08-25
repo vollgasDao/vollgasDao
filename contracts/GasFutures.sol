@@ -120,7 +120,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         uint256 dividendPoolShare = gasFuturePrice.mul(100 + dividendPoolPercentage).div(100);
         dividendPoolShare = dividendPoolShare.sub(gasFuturePrice);
         uint256 reservePoolShare = gasFuturePrice.sub(dividendPoolShare);
-        IBondingCurve(bondingCurveAddr).pay.value(dividendPoolShare)();
+        // IBondingCurve(bondingCurveAddr).pay.value(dividendPoolShare)();
         reservePool.add(reservePoolShare);
 
 
@@ -181,11 +181,10 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
 
     // Creates a Chainlink request with the uint256 multiplier job
     function requestAverageGasPrice()
-        chainlinkAvailable
         public
     {
         // Increment the request timeout
-        chainlinkRequestTimeout.add(5 minutes);
+        chainlinkRequestTimeout.add(5 seconds);
 
         // newRequest takes a JobID, a callback address, and callback function as input
         Chainlink.Request memory req = buildChainlinkRequest(UINT256_MUL_JOB,
@@ -208,8 +207,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         // Use recordChainlinkFulfillment to ensure only the requesting oracle can fulfill
         recordChainlinkFulfillment(_requestId)
     {
-        _averagePrice = _averagePrice.mul(10**8);  // convert from 10x gwei to wei
-        redeemPricePerGas = _averagePrice;
+        redeemPricePerGas = _averagePrice.mul(10**8);  // convert from 10x gwei to wei
     }
 
     // withdrawLink allows the owner to withdraw any extra LINK on the contract
