@@ -44,19 +44,19 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
     bytes32 constant UINT256_MUL_JOB = bytes32("9f0406209cf64acda32636018b33de11");
     // Timeout for calls to oracle
     bool public chainlinkActivated;
-    uint256 public chainlinkRequestTimeout = now;
+    // uint256 public chainlinkRequestTimeout = now;
     // Callback variable to be set:
     uint256 public redeemPricePerGas;
     // ******* CHAINLINK redeemPricePerGas (Chainlink -> EthGasStation) END *******
     // **************************** State Variables END **********************************
 
     // modifier
-    modifier chainlinkAvailable() {
+    /*modifier chainlinkAvailable() {
         require(chainlinkRequestTimeout <= now,
             "chainlinkAvailabe: time out"
         );
         _;
-    }
+    }*/
 
     // **************************** GasFutures constructor() ******************************
     constructor(address _bondingCurve)
@@ -104,9 +104,9 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         require(_gasAmount != 0, "gasFutures.mintGasFuture: _gasAmount cannot be 0");
 
         // Step1: chainlinkRequestTimeout check and setting
-        if (chainlinkRequestTimeout < now && chainlinkActivated) {
-            requestAverageGasPrice();
-        }
+        require(chainlinkActivated, "chainlink inactive");
+        requestAverageGasPrice();
+
 
         // Step2: get the gasFuturePrice
         uint256 gasFuturePrice = _gasAmount.mul(feePerGas);
@@ -184,7 +184,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         public
     {
         // Increment the request timeout
-        chainlinkRequestTimeout.add(5 seconds);
+        // chainlinkRequestTimeout.add(5 seconds);
 
         // newRequest takes a JobID, a callback address, and callback function as input
         Chainlink.Request memory req = buildChainlinkRequest(UINT256_MUL_JOB,
