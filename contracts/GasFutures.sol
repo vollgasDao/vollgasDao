@@ -70,7 +70,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         bondingCurveAddr = _bondingCurve;
 
         // Chainlink
-        chainlinkActivated = false;
+        chainlinkActivated = true;
         redeemPricePerGas = 5000000000;
         // Set the address for the LINK token for the network
         setChainlinkToken(0x01BE23585060835E02B77ef475b0Cc51aA1e0709);
@@ -190,8 +190,8 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
 
         // newRequest takes a JobID, a callback address, and callback function as input
         Chainlink.Request memory req = buildChainlinkRequest(UINT256_MUL_JOB,
-                                                            this,
-                                                            this.setRedeemPricePerGas.selector
+                                                             this,
+                                                             this.setRedeemPricePerGas.selector
         );
         // Adds a URL with the key "get" to the request parameters
         req.add("get", "https://ethgasstation.info/json/ethgasAPI.json");
@@ -209,7 +209,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         // Use recordChainlinkFulfillment to ensure only the requesting oracle can fulfill
         recordChainlinkFulfillment(_requestId)
     {
-        _averagePrice = _averagePrice.mul(10**8);  // convert from 10x gwei to wei
+        // _averagePrice = _averagePrice.mul(10**8);  // convert from 10x gwei to wei
         redeemPricePerGas = _averagePrice;
     }
 
