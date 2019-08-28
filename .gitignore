@@ -8,5 +8,4 @@ coverage
 .history
 env/*
 !env/*.example
-truffle-config.js
 .env
