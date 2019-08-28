@@ -209,8 +209,7 @@ contract GasFutures is ChainlinkClient, Future, Ownable {
         // Use recordChainlinkFulfillment to ensure only the requesting oracle can fulfill
         recordChainlinkFulfillment(_requestId)
     {
-        // _averagePrice = _averagePrice.mul(10**8);  // convert from 10x gwei to wei
-        redeemPricePerGas = _averagePrice;
+        redeemPricePerGas = _averagePrice.mul(10**8);  // convert from 10x gwei to wei
     }
 
     // withdrawLink allows the owner to withdraw any extra LINK on the contract
