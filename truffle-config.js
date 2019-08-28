@@ -1,10 +1,8 @@
 require('dotenv').config();
 const HDWalletProvider = require('truffle-hdwallet-provider')
 
-const MNEMONIC = process.env["MNEMONIC"];
-const RPC_URL = process.env.RPC_URL;
-console.log(MNEMONIC);
-console.log(RPC_URL);
+const MNEMONIC = process.env.MNEMONIC;
+const RPC_URL = process.env.ROPSTEN;
 
 module.exports = {
   networks: {
