@@ -2,10 +2,7 @@ require('dotenv').config();
 const HDWalletProvider = require('truffle-hdwallet-provider')
 
 const MNEMONIC = process.env["MNEMONIC"];
-const INFURA_KEY_RINKEBY = process.env.INFURA_KEY_RINKEBY;
-const RPC_URL = `https://rinkeby.infura.io/${INFURA_KEY_RINKEBY}`;
-console.log(RPC_URL);
-
+const RPC_URL = process.env.RPC_URL;
 
 module.exports = {
   networks: {
