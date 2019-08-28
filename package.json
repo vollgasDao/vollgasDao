@@ -26,5 +26,8 @@
   "dependencies": {
     "chainlink": "^0.6.6-beta2",
     "truffle-hdwallet-provider": "^1.0.17"
+  },
+  "devDependencies": {
+    "dotenv": "^8.1.0"
   }
 }
