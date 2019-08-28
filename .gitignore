@@ -9,4 +9,4 @@ coverage
 env/*
 !env/*.example
 truffle-config.js
-
+.env
